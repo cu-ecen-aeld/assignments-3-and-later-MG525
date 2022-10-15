@@ -25,5 +25,4 @@ output=$(grep -rch "$SEARCHSTR" $FILESDIR | grep -v 0)
 NOOFFILES=$(echo $output | wc -w)
 NOOFMATCHINGLINES=$(echo $output | sed 's/ /+/g' | bc)
 
-The number of files are 10 and the number of matching lines are 10
 echo "The number of files are $NOOFFILES and the number of matching lines are $NOOFMATCHINGLINES"
