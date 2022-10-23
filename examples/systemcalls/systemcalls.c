@@ -16,8 +16,13 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
-    return true;
+    if (system(cmd) == EXIT_SUCCESS){
+        return true;
+    }
+    else{
+        return false;
+    }
+    
 }
 
 /**
@@ -45,9 +50,6 @@ bool do_exec(int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
 
 /*
  * TODO:
@@ -58,10 +60,22 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    pid_t pid;
+    int status;
+    bool result = false;
 
+    pid = fork();
+    if(pid == 0){
+        execv(command[0], command);
+        exit(EXIT_FAILURE);
+    }
+    else{
+        pid = waitpid(pid, &status, 0);
+        if(pid > 0 && WIFEXITED(status)==true && WEXITSTATUS(status)==0) result = true;
+    }
+    
     va_end(args);
-
-    return true;
+    return result;
 }
 
 /**
@@ -80,9 +94,6 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
 
 
 /*
@@ -92,8 +103,25 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
+    int status;
+    bool result = false;
+    pid_t pid;
+    int fd = open(outputfile, O_WRONLY);
+    if (fd < 0) { perror("open"); return result; }
+    switch (pid = fork()) {
+    case -1: return result;
+    case 0:
+        if (dup2(fd, 1) < 0) {return result; }
+        close(fd);
+        execv(command[0], command);
+        exit(EXIT_FAILURE);
+    default:
+        close(fd);
+        pid = waitpid(pid, &status, 0);
+        if(pid > 0 && WIFEXITED(status)==true && WEXITSTATUS(status)==0) result = true;
+    }
 
     va_end(args);
 
-    return true;
+    return result;
 }
