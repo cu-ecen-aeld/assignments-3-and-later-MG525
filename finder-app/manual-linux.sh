@@ -5,14 +5,13 @@
 set -e
 set -u
 
-ARM_CROSS_COMPILE_PATH=/home/mg/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu/bin/
 OUTDIR=/tmp/aeld
 KERNEL_REPO=git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
 KERNEL_VERSION=v5.1.10
 BUSYBOX_VERSION=1_33_1
 FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
-CROSS_COMPILE=${ARM_CROSS_COMPILE_PATH}aarch64-none-linux-gnu-
+CROSS_COMPILE=aarch64-none-linux-gnu-
 
 if [ $# -lt 1 ]
 then
@@ -99,13 +98,13 @@ ${CROSS_COMPILE}readelf -a ${OUTDIR}/rootfs/bin/busybox | grep "Shared library"
 # TODO: Add library dependencies to rootfs
 export SYSROOT=$(${CROSS_COMPILE}gcc -print-sysroot)
 cp -a ${SYSROOT}/lib/ld-linux-aarch64.so.1 ${OUTDIR}/rootfs/lib
-cp -a ${SYSROOT}/lib64/ld-2.33.so ${OUTDIR}/rootfs/lib64
+cp -a ${SYSROOT}/lib64/ld-2.31.so ${OUTDIR}/rootfs/lib64
 cp -a ${SYSROOT}/lib64/libm.so.6 ${OUTDIR}/rootfs/lib64
-cp -a ${SYSROOT}/lib64/libm-2.33.so ${OUTDIR}/rootfs/lib64
+cp -a ${SYSROOT}/lib64/libm-2.31.so ${OUTDIR}/rootfs/lib64
 cp -a ${SYSROOT}/lib64/libresolv.so.2 ${OUTDIR}/rootfs/lib64
-cp -a ${SYSROOT}/lib64/libresolv-2.33.so ${OUTDIR}/rootfs/lib64
+cp -a ${SYSROOT}/lib64/libresolv-2.31.so ${OUTDIR}/rootfs/lib64
 cp -a ${SYSROOT}/lib64/libc.so.6 ${OUTDIR}/rootfs/lib64
-cp -a ${SYSROOT}/lib64/libc-2.33.so ${OUTDIR}/rootfs/lib64
+cp -a ${SYSROOT}/lib64/libc-2.31.so ${OUTDIR}/rootfs/lib64
 
 # TODO: Make device nodes
 sudo mknod -m 666 ${OUTDIR}/rootfs/dev/null c 1 3
