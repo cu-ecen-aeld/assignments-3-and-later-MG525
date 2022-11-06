@@ -25,4 +25,6 @@ output=$(grep -rch "$SEARCHSTR" $FILESDIR | grep -v 0)
 NOOFFILES=$(echo $output | wc -w)
 NOOFMATCHINGLINES=$(echo $output | sed 's/ /+/g' | bc)
 
+
+echo "The number of files are $NOOFFILES and the number of matching lines are $NOOFMATCHINGLINES" > /tmp/assignment4-result.txt
 echo "The number of files are $NOOFFILES and the number of matching lines are $NOOFMATCHINGLINES"
