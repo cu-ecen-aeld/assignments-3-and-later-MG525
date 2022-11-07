@@ -7,7 +7,7 @@ set -e
 NAME=aesdsocket
 PIDFILE=/var/run/$NAME.pid
 #This is the command to be run, give the full pathname
-DAEMON=/home/mg/SP_Linux_Course/git_repos/assignment/assignments-3-and-later-MG525/server/aesdsocket
+DAEMON=/usr/bin/aesdsocket
 DAEMON_OPTS="-d"
 
 export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
