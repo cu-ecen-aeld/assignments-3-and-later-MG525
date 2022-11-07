@@ -13,14 +13,14 @@
 
 #define MYPORT "9000"
 #define BACKLOG 10
-#define BUFSIZE 1024 * 1024
+#define BUFSIZE 5*1024*1024
 #define DUMPFILE "/var/tmp/aesdsocketdata"
 
 bool term_int_caught = false;
 
 int write_to_file(const char *filename, const char *str)
 {
-    FILE *file = fopen(filename, "a");
+    FILE *file = fopen(filename, "ab");
     if (file == NULL)
     {
         syslog(LOG_ERR, "Cannot open file: %s", filename);
@@ -28,7 +28,6 @@ int write_to_file(const char *filename, const char *str)
     }
     else
     {
-        syslog(LOG_DEBUG, "Writing %s to %s", str, filename);
         fputs(str, file);
         fclose(file);
     }
@@ -39,7 +38,7 @@ char *read_file_content(const char *filename)
 {
     char *buffer = NULL;
     long length;
-    FILE *f = fopen(filename, "r");
+    FILE *f = fopen(filename, "rb");
 
     if (f)
     {
@@ -68,7 +67,6 @@ int delete_file(const char *filename)
     {
         if (remove(filename) == 0)
         {
-            syslog(LOG_DEBUG, "file %s deleted successfully", filename);
             return 0;
         }
         else
@@ -190,7 +188,7 @@ int main(int argc, char *argv[])
     }
 
     if(isdaemon){
-        if(fork()) return 0;
+        if(fork()) exit(EXIT_SUCCESS);
     }
 
     while (!term_int_caught)
@@ -212,6 +210,7 @@ int main(int argc, char *argv[])
         syslog(LOG_INFO, "Accepted connection from %s", s);
 
         char msg[BUFSIZE];
+        memset(&msg, 0, BUFSIZE);
         int recevied_bytes = recv(sockfd_accepted, msg, BUFSIZE, 0);
         if (recevied_bytes == -1)
         {
@@ -234,13 +233,12 @@ int main(int argc, char *argv[])
                 }
                 free(buffer);
                 close(sockfd_accepted);
-                return 0;
+                exit(EXIT_SUCCESS);
             }
         }
         close(sockfd_accepted);
     }
     close(sockfd);
     delete_file(DUMPFILE);
-
-    return 0;
+    exit(EXIT_SUCCESS);
 }
