@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
     while ((opt = getopt(argc, argv, "d")) != -1) {
         switch (opt) {
         case 'd': isdaemon = true; break;
-        default:
+        default: /* do nothing */ ;
         }
     }
 
