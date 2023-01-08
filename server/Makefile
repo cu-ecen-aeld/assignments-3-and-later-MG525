@@ -10,8 +10,8 @@ endif
 all: clean default
 
 default:
-	$(CC) -g -Wall -Werror -c -o aesdsocket.o aesdsocket.c
-	$(CC) -g -Wall -Werror -I/  aesdsocket.o -o aesdsocket
+	$(CC) -pthread -g -Wall -Werror -c -o aesdsocket.o aesdsocket.c
+	$(CC) -pthread -g -Wall -Werror -I/  aesdsocket.o -o aesdsocket
 	
 
 clean:
