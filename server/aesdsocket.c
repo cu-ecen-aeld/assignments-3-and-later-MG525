@@ -54,8 +54,8 @@ char *read_file_content(const char *filename)
         buffer = malloc(length + 1);
         if (buffer)
         {
-            fread(buffer, sizeof(char), length + 40, f);
-            buffer[length] = '\0';
+            int count = fread(buffer, sizeof(char), length + 40, f);
+            buffer[count] = '\0';
         }
         fclose(f);
     }
