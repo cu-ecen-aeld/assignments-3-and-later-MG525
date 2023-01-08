@@ -1,17 +1,20 @@
 
-ifndef CC
-	ifdef CROSS_COMPILE
-		CC=$(CROSS_COMPILE)gcc
-	else
-		CC=gcc
-	endif
+ifeq ($(CC),)
+	CC = $(CROSS_COMPILE)gcc
 endif
+ifeq ($(CFLAGS),)
+	CFLAGS = -g -Wall -Werror
+endif
+ifeq ($(LDFLAGS),)
+	LDFLAGS = -pthread -lrt
+endif
+
 
 all: clean default
 
 default:
-	$(CC) -pthread -g -Wall -Werror -c -o aesdsocket.o aesdsocket.c
-	$(CC) -pthread -g -Wall -Werror -I/  aesdsocket.o -o aesdsocket
+	$(CC) $(LDFLAGS) $(CFLAGS) -c -o aesdsocket.o aesdsocket.c
+	$(CC) $(LDFLAGS) $(CFLAGS) -I/  aesdsocket.o -o aesdsocket
 	
 
 clean:
