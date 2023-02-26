@@ -76,7 +76,7 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
         buffer->full = true;
     }
     //buffer was already full then we need to move out_offs to be equal in_offs
-    else if(buffer->full && buffer->in_offs > buffer->out_offs){
+    else if(buffer->full && (buffer->in_offs > buffer->out_offs || buffer->in_offs == 0)){
         buffer->out_offs = buffer->in_offs;
     }
 
