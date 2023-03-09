@@ -1,4 +1,5 @@
 
+
 ifeq ($(CC),)
 	CC = $(CROSS_COMPILE)gcc
 endif
@@ -10,10 +11,11 @@ ifeq ($(LDFLAGS),)
 endif
 
 
+
 all: clean default
 
 default:
-	$(CC) $(LDFLAGS) $(CFLAGS) -c -o aesdsocket.o aesdsocket.c
+	$(CC) $(LDFLAGS) $(CFLAGS) -D USE_AESD_CHAR_DEVICE=1 -c -o aesdsocket.o aesdsocket.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -I/  aesdsocket.o -o aesdsocket
 	
 

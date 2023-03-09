@@ -19,7 +19,12 @@
 #define MYPORT "9000"
 #define BACKLOG 10
 #define BUFSIZE 5 * 1024 * 1024
-#define DUMPFILE "/var/tmp/aesdsocketdata"
+#if defined USE_AESD_CHAR_DEVICE && USE_AESD_CHAR_DEVICE==1
+    #define DUMPFILE "/dev/aesdchar"
+#else
+    #define DUMPFILE "/var/tmp/aesdsocketdata"
+#endif
+
 #define ALRM_INT_SEC 10
 
 bool term_int_caught = false;
@@ -44,17 +49,14 @@ int write_to_file(const char *filename, const char *str)
 char *read_file_content(const char *filename)
 {
     char *buffer = NULL;
-    long length;
     FILE *f = fopen(filename, "rb");
     if (f)
     {
-        fseek(f, 0, SEEK_END);
-        length = ftell(f);
-        fseek(f, 0, SEEK_SET);
-        buffer = malloc(length + 1);
+        syslog(LOG_DEBUG, "read_file_content: file opened");
+        buffer = malloc(BUFSIZE);
         if (buffer)
         {
-            int count = fread(buffer, sizeof(char), length + 40, f);
+            int count = fread(buffer, sizeof(char), BUFSIZE, f);
             buffer[count] = '\0';
         }
         fclose(f);
@@ -120,6 +122,7 @@ void *recv_send_socket_thread(void *thread_param)
             if (!write_to_file(DUMPFILE, msg))
             {
                 char *buffer = read_file_content(DUMPFILE);
+                syslog(LOG_DEBUG, "File_Content: %s", buffer);
                 if (buffer)
                 {
                     if (send(thread_func_args->sockfd_accepted, buffer, strlen(buffer), 0) == -1)
@@ -350,12 +353,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    rc = delete_file(DUMPFILE);
-    if (rc != 0)
-    {
-        syslog(LOG_ERR, "delete_file error\n");
-        return 1;
-    }
+    #ifndef USE_AESD_CHAR_DEVICE
+        rc = delete_file(DUMPFILE);
+        if (rc != 0)
+        {
+            syslog(LOG_ERR, "delete_file error\n");
+            return 1;
+        }
+    #endif
 
     if (isdaemon)
     {
@@ -373,7 +378,7 @@ int main(int argc, char *argv[])
     struct slisthead head;
     SLIST_INIT(&head);
 
-    alarm(ALRM_INT_SEC);
+    //alarm(ALRM_INT_SEC); /* Activate timestamp printing every ALRM_INT_SEC in DUMPFILE */
     while (!term_int_caught)
     {
         struct sockaddr_storage their_addr;
@@ -425,6 +430,5 @@ int main(int argc, char *argv[])
         }
     }
     close(sockfd);
-    delete_file(DUMPFILE);
     exit(EXIT_SUCCESS);
 }
