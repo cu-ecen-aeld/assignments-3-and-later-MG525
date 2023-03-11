@@ -243,8 +243,8 @@ void aesd_cleanup_module(void)
     int i;
     for (i = 0; i < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; i++)
     {
-        if (&(aesd_device.c_buffer.entry[i].buffptr))
-            kfree(&(aesd_device.c_buffer.entry[i].buffptr));
+        if (aesd_device.c_buffer.entry[i].buffptr)
+            kfree(aesd_device.c_buffer.entry[i].buffptr);
     }
 
     unregister_chrdev_region(devno, 1);
