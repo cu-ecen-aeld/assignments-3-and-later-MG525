@@ -240,7 +240,8 @@ void aesd_cleanup_module(void)
      * TODO: cleanup AESD specific poritions here as necessary
      */
     PDEBUG("Free allocated memory for aesd_device c_buffer entries");
-    for (int i = 0; i < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; i++)
+    int i;
+    for (i = 0; i < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; i++)
     {
         if (&(aesd_device.c_buffer.entry[i].buffptr))
             kfree(&(aesd_device.c_buffer.entry[i].buffptr));
