@@ -15,14 +15,17 @@
 #include <sys/queue.h>
 #include <time.h>
 #include <errno.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include "../aesd-char-driver/aesd_ioctl.h"
 
 #define MYPORT "9000"
 #define BACKLOG 10
 #define BUFSIZE 5 * 1024 * 1024
-#if defined USE_AESD_CHAR_DEVICE && USE_AESD_CHAR_DEVICE==1
-    #define DUMPFILE "/dev/aesdchar"
+#if defined USE_AESD_CHAR_DEVICE && USE_AESD_CHAR_DEVICE == 1
+#define DUMPFILE "/dev/aesdchar"
 #else
-    #define DUMPFILE "/var/tmp/aesdsocketdata"
+#define DUMPFILE "/var/tmp/aesdsocketdata"
 #endif
 
 #define ALRM_INT_SEC 10
@@ -30,37 +33,42 @@
 bool term_int_caught = false;
 pthread_mutex_t mutex;
 
-int write_to_file(const char *filename, const char *str)
+int write_to_file(const int fd, const char *str)
 {
-    FILE *file = fopen(filename, "ab");
-    if (file == NULL)
+
+    if(strncmp(str, "AESDCHAR_IOCSEEKTO:", strlen("AESDCHAR_IOCSEEKTO:")) == 0)
     {
-        syslog(LOG_ERR, "Cannot open file: %s", filename);
-        return 1;
+        //IOCTL command
+        struct aesd_seekto seekto;
+        sscanf(str, "AESDCHAR_IOCSEEKTO:%d,%d", &seekto.write_cmd, &seekto.write_cmd_offset);
+        ioctl(fd, AESDCHAR_IOCSEEKTO, &seekto);
     }
     else
     {
-        fputs(str, file);
-        fclose(file);
+        // write to buffer
+        ssize_t written_bytes = write(fd, str, strlen(str));
+        if(written_bytes != strlen(str)){
+            syslog(LOG_ERR, "Write Failed");
+            return 1;
+        }
     }
     return 0;
 }
 
-char *read_file_content(const char *filename)
+char *read_file_content(const int fd)
 {
-    char *buffer = NULL;
-    FILE *f = fopen(filename, "rb");
-    if (f)
+    char *buffer = malloc(BUFSIZE);
+    if (buffer)
     {
-        syslog(LOG_DEBUG, "read_file_content: file opened");
-        buffer = malloc(BUFSIZE);
-        if (buffer)
-        {
-            int count = fread(buffer, sizeof(char), BUFSIZE, f);
-            buffer[count] = '\0';
+        int count = 0;
+        char tmp;
+        while(read(fd, &tmp, 1)){
+            buffer[count] = tmp;
+            count++;
         }
-        fclose(f);
+        buffer[count] = '\0';
     }
+
     return buffer;
 }
 
@@ -119,9 +127,10 @@ void *recv_send_socket_thread(void *thread_param)
         }
         else
         {
-            if (!write_to_file(DUMPFILE, msg))
+            int fd = open(DUMPFILE, O_RDWR|O_CREAT|O_APPEND, 0777);
+            if (!write_to_file(fd, msg))
             {
-                char *buffer = read_file_content(DUMPFILE);
+                char *buffer = read_file_content(fd);
                 syslog(LOG_DEBUG, "File_Content: %s", buffer);
                 if (buffer)
                 {
@@ -140,6 +149,7 @@ void *recv_send_socket_thread(void *thread_param)
             {
                 syslog(LOG_ERR, "\n thread failed! .. write to file fail\n");
             }
+            close(fd);
         }
 
         // release
@@ -199,7 +209,8 @@ void write_time_to_file(const char *filename)
     strcat(result, t);
     strcat(result, "\n");
 
-    write_to_file(filename, result);
+    int fd = open(filename, O_RDWR|O_CREAT|O_APPEND, 0777);
+    write_to_file(fd, result);
     free(t);
     free(result);
 }
@@ -353,14 +364,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    #ifndef USE_AESD_CHAR_DEVICE
-        rc = delete_file(DUMPFILE);
-        if (rc != 0)
-        {
-            syslog(LOG_ERR, "delete_file error\n");
-            return 1;
-        }
-    #endif
+#ifndef USE_AESD_CHAR_DEVICE
+    rc = delete_file(DUMPFILE);
+    if (rc != 0)
+    {
+        syslog(LOG_ERR, "delete_file error\n");
+        return 1;
+    }
+#endif
 
     if (isdaemon)
     {
@@ -378,7 +389,7 @@ int main(int argc, char *argv[])
     struct slisthead head;
     SLIST_INIT(&head);
 
-    //alarm(ALRM_INT_SEC); /* Activate timestamp printing every ALRM_INT_SEC in DUMPFILE */
+    // alarm(ALRM_INT_SEC); /* Activate timestamp printing every ALRM_INT_SEC in DUMPFILE */
     while (!term_int_caught)
     {
         struct sockaddr_storage their_addr;
@@ -388,8 +399,10 @@ int main(int argc, char *argv[])
         if (sockfd_accepted == -1)
         {
             syslog(LOG_ERR, "accept error\n");
-            if(errno == EINTR) continue;
-            else return 1;
+            if (errno == EINTR)
+                continue;
+            else
+                return 1;
         }
         char s[INET6_ADDRSTRLEN];
         memset(&s, 0, INET6_ADDRSTRLEN);
